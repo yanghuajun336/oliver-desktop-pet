@@ -77,9 +77,9 @@ oliver-desktop-pet/
 - [x] Main window and event loop
 - [x] Character class and state management
 - [x] Basic rendering pipeline
-- [ ] Detailed character drawing
-- [ ] Animation system
-- [ ] Particle effects
+- [x] Detailed character drawing
+- [x] Animation system
+- [x] Particle effects
 - [ ] Audio system
 - [ ] Advanced interactions
 - [ ] Packaging as EXE
