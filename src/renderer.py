@@ -1,4 +1,6 @@
 """Rendering engine for character drawing"""
+from pathlib import Path
+
 from PyQt5.QtGui import (
     QPainter,
     QColor,
@@ -8,9 +10,12 @@ from PyQt5.QtGui import (
     QRadialGradient,
     QPainterPath,
     QPolygonF,
+    QPixmap,
+    QImage,
 )
-from PyQt5.QtCore import Qt, QRectF, QPointF
-from src.config import COLOR_PALETTE, CHARACTER
+from PyQt5.QtCore import Qt, QRectF, QPointF, QSize
+from PyQt5.QtSvg import QSvgRenderer
+from src.config import COLOR_PALETTE, CHARACTER, SPRITES_DIR
 from src.character import Character
 from src.particles import ParticleType
 import math
@@ -22,11 +27,45 @@ class Renderer:
     def __init__(self, widget):
         self.widget = widget
         self.palette = COLOR_PALETTE
+        self._svg_cache = {}
+        self._asset_alignment = {
+            "body": {"offset": QPointF(0.0, -6.0)},
+            "head": {"offset": QPointF(0.0, -4.0)},
+            "eyes": {"offset": QPointF(0.0, 0.0)},
+            "eyebrows": {"offset": QPointF(0.0, -1.0)},
+            "beak": {"offset": QPointF(0.0, 0.0)},
+            "wings": {"offset": QPointF(0.0, -2.0)},
+            "horns": {"offset": QPointF(0.0, -24.0)},
+            "hat": {"offset": QPointF(0.0, -3.0)},
+            "glasses": {"offset": QPointF(0.0, 0.0)},
+            "scarf": {"offset": QPointF(0.0, 0.0)},
+            "badge": {"offset": QPointF(0.0, 0.0)},
+            "shoes": {"offset": QPointF(0.0, 0.0)},
+        }
+        self.asset_paths = {
+            "body": SPRITES_DIR / "oliver_body.svg",
+            "head": SPRITES_DIR / "oliver_head.svg",
+            "eyes": SPRITES_DIR / "oliver_eyes.svg",
+            "beak": SPRITES_DIR / "oliver_beak.svg",
+            "eyebrows": SPRITES_DIR / "oliver_eyebrows.svg",
+            "horns": SPRITES_DIR / "oliver_horns.svg",
+            "wings": SPRITES_DIR / "oliver_wings.svg",
+            "hat": SPRITES_DIR / "oliver_hat.svg",
+            "glasses": SPRITES_DIR / "oliver_glasses.svg",
+            "scarf": SPRITES_DIR / "oliver_scarf.svg",
+            "badge": SPRITES_DIR / "oliver_badge.svg",
+            "shoes": SPRITES_DIR / "oliver_shoes.svg",
+            "particles": SPRITES_DIR / "oliver_particles.svg",
+        }
     
     def render(self, painter: QPainter, character: Character):
         """Main render function"""
         # Calculate scaling factor based on character screen height
         scale = CHARACTER['screen_height_px'] / 100  # Base unit
+
+        if all(path.exists() for path in self.asset_paths.values()):
+            self.draw_oliver_idle(painter, character, scale)
+            return
         
         # Translate to character position
         painter.save()
@@ -50,6 +89,273 @@ class Renderer:
         self.draw_accessories(painter, character, scale)
         self.draw_effects(painter, character, scale)
         painter.restore()
+
+    def load_svg(self, path):
+        """Load an SVG file into a high-DPI pixmap cache."""
+        asset_path = Path(path)
+        cache_key = str(asset_path)
+        if cache_key in self._svg_cache:
+            return self._svg_cache[cache_key]
+
+        if not asset_path.exists():
+            return QPixmap()
+
+        renderer = QSvgRenderer(str(asset_path))
+        size = renderer.defaultSize()
+        if not size.isValid() or size.isEmpty():
+            size = QSize(128, 128)
+
+        device_ratio = 1.0
+        if self.widget is not None and self.widget.windowHandle() is not None:
+            device_ratio = max(1.0, self.widget.windowHandle().devicePixelRatio())
+
+        image = QImage(
+            max(1, int(size.width() * device_ratio)),
+            max(1, int(size.height() * device_ratio)),
+            QImage.Format_ARGB32_Premultiplied,
+        )
+        image.setDevicePixelRatio(device_ratio)
+        image.fill(Qt.transparent)
+
+        svg_painter = QPainter(image)
+        svg_painter.setRenderHint(QPainter.Antialiasing)
+        svg_painter.setRenderHint(QPainter.SmoothPixmapTransform)
+        renderer.render(svg_painter)
+        svg_painter.end()
+
+        pixmap = QPixmap.fromImage(image)
+        self._svg_cache[cache_key] = pixmap
+        return pixmap
+
+    def render_component(
+        self,
+        painter: QPainter,
+        component_name: str,
+        position: QPointF,
+        rotation: float = 0.0,
+        scale: float = 1.0,
+        opacity: float = 1.0,
+        blend_mode=QPainter.CompositionMode_SourceOver,
+    ):
+        """Render a named SVG component with transform control."""
+        asset_name = "wings" if component_name.startswith("wing_") else component_name
+        asset_name = "horns" if component_name.startswith("horn_") else asset_name
+        asset_path = self.asset_paths.get(asset_name)
+        if asset_path is None:
+            return
+
+        pixmap = self.load_svg(asset_path)
+        if pixmap.isNull() or opacity <= 0.0:
+            return
+
+        width = pixmap.width() / pixmap.devicePixelRatioF()
+        height = pixmap.height() / pixmap.devicePixelRatioF()
+        offset = self._asset_alignment.get(asset_name, {}).get("offset", QPointF(0.0, 0.0))
+
+        painter.save()
+        painter.setOpacity(max(0.0, min(1.0, opacity)))
+        painter.setCompositionMode(blend_mode)
+        painter.translate(position)
+        painter.rotate(rotation)
+        painter.scale(scale, scale)
+        painter.drawPixmap(QPointF(-width / 2.0 + offset.x(), -height / 2.0 + offset.y()), pixmap)
+        painter.restore()
+
+    def draw_oliver_idle(self, painter: QPainter, character: Character, scale: float):
+        """Render the complete idle pose using layered SVG assets."""
+        painter.save()
+        painter.translate(character.position.x, character.position.y)
+        painter.scale(character.scale, character.scale)
+        painter.rotate(character.forward_tilt)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.SmoothPixmapTransform)
+
+        self.apply_shadow_effect(
+            painter,
+            0.0,
+            (112.0 + character.body_y_offset) * scale,
+            46.0 * scale,
+            QColor(18, 25, 44, 84),
+            20.0 * scale,
+        )
+        self.apply_glow_effect(
+            painter,
+            0.0,
+            (18.0 + character.body_y_offset) * scale,
+            62.0 * scale,
+            QColor(127, 150, 214),
+            character.ambient_glow_intensity,
+        )
+
+        self._draw_idle_effects(painter, character, scale, background=True)
+
+        for wing_name in ("wing_left", "wing_right"):
+            transform = character.get_component_transform(wing_name)
+            self.render_component(
+                painter,
+                wing_name,
+                QPointF(transform["position"][0] * scale, transform["position"][1] * scale),
+                transform["rotation"],
+                transform["scale"],
+                transform["opacity"],
+                blend_mode=QPainter.CompositionMode_SourceOver,
+            )
+
+        for component_name in ("body", "scarf", "badge", "shoes"):
+            transform = character.get_component_transform(component_name)
+            self.render_component(
+                painter,
+                component_name,
+                QPointF(transform["position"][0] * scale, transform["position"][1] * scale),
+                transform["rotation"],
+                transform["scale"],
+                transform["opacity"],
+            )
+
+        for component_name in ("head", "eyes", "eyebrows", "beak"):
+            transform = character.get_component_transform(component_name)
+            blend_mode = QPainter.CompositionMode_SourceOver
+            if component_name == "eyes":
+                blend_mode = QPainter.CompositionMode_Screen
+            self.render_component(
+                painter,
+                component_name,
+                QPointF(transform["position"][0] * scale, transform["position"][1] * scale),
+                transform["rotation"],
+                transform["scale"],
+                transform["opacity"],
+                blend_mode=blend_mode,
+            )
+
+        if character.eye_openness < 0.28:
+            painter.save()
+            transform = character.get_component_transform("eyes")
+            painter.translate(transform["position"][0] * scale, transform["position"][1] * scale)
+            painter.rotate(transform["rotation"])
+            painter.setPen(QPen(QColor(*self.palette["dark_indigo"]), max(2.0, scale * 0.9), Qt.SolidLine, Qt.RoundCap))
+            painter.drawLine(QPointF(-18 * scale, -3 * scale), QPointF(-2 * scale, -1 * scale))
+            painter.drawLine(QPointF(2 * scale, -1 * scale), QPointF(18 * scale, -3 * scale))
+            painter.restore()
+
+        self._draw_horn_ring(painter, character, scale)
+
+        for component_name in ("hat", "glasses"):
+            transform = character.get_component_transform(component_name)
+            self.render_component(
+                painter,
+                component_name,
+                QPointF(transform["position"][0] * scale, transform["position"][1] * scale),
+                transform["rotation"],
+                transform["scale"],
+                transform["opacity"],
+                blend_mode=QPainter.CompositionMode_SourceOver,
+            )
+
+        self._draw_idle_effects(painter, character, scale, background=False)
+        painter.restore()
+
+    def apply_shadow_effect(self, painter: QPainter, x: float, y: float, size: float, color: QColor, blur: float):
+        """Paint a soft shadow ellipse."""
+        painter.save()
+        gradient = QRadialGradient(QPointF(x, y), max(size, blur))
+        transparent = QColor(color)
+        transparent.setAlpha(0)
+        gradient.setColorAt(0.0, color)
+        gradient.setColorAt(min(1.0, size / max(size, blur * 1.5)), QColor(color.red(), color.green(), color.blue(), int(color.alpha() * 0.45)))
+        gradient.setColorAt(1.0, transparent)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QBrush(gradient))
+        painter.drawEllipse(QRectF(x - size, y - size * 0.35, size * 2.0, size * 0.7))
+        painter.restore()
+
+    def apply_glow_effect(self, painter: QPainter, x: float, y: float, size: float, color: QColor, intensity: float):
+        """Paint a soft ambient glow."""
+        painter.save()
+        gradient = QRadialGradient(QPointF(x, y), size)
+        inner = QColor(color)
+        inner.setAlpha(int(70 * max(0.0, min(1.0, intensity))))
+        mid = QColor(color)
+        mid.setAlpha(int(28 * max(0.0, min(1.0, intensity))))
+        outer = QColor(color)
+        outer.setAlpha(0)
+        gradient.setColorAt(0.0, inner)
+        gradient.setColorAt(0.45, mid)
+        gradient.setColorAt(1.0, outer)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QBrush(gradient))
+        painter.setCompositionMode(QPainter.CompositionMode_Screen)
+        painter.drawEllipse(QRectF(x - size, y - size, size * 2.0, size * 2.0))
+        painter.restore()
+
+    def _draw_horn_ring(self, painter: QPainter, character: Character, scale: float):
+        head_transform = character.get_component_transform("head")
+        anchor_x = head_transform["position"][0]
+        anchor_y = head_transform["position"][1] - 18.0
+        base_angle = head_transform["rotation"] - 34.0
+        for index in range(12):
+            local_angle = base_angle + index * 6.0
+            radians = math.radians(local_angle)
+            radius = 12.0 + (index % 3) * 2.0
+            position = QPointF(
+                (anchor_x + math.cos(radians) * radius) * scale,
+                (anchor_y + math.sin(radians) * radius) * scale,
+            )
+            self.render_component(
+                painter,
+                f"horn_{index}",
+                position,
+                local_angle - 90.0,
+                0.55,
+                0.92,
+                blend_mode=QPainter.CompositionMode_SourceOver,
+            )
+
+    def _draw_idle_effects(self, painter: QPainter, character: Character, scale: float, background: bool):
+        ambient_color = QColor(*character.visual_effects.ambient_color)
+        for pulse in character.visual_effects.pulse_waves:
+            if not background:
+                continue
+            color = QColor(ambient_color)
+            color.setAlphaF(pulse.alpha)
+            painter.save()
+            painter.setPen(QPen(color, max(1.0, scale * 0.6)))
+            painter.setBrush(Qt.NoBrush)
+            radius = pulse.radius * scale
+            center_y = (-6.0 + character.body_y_offset) * scale
+            painter.drawEllipse(QRectF(-radius, center_y - radius, radius * 2.0, radius * 2.0))
+            painter.restore()
+
+        for particle in character.visual_effects.ambient_particles:
+            if not background:
+                continue
+            color = QColor(*character.visual_effects.ambient_color)
+            color.setAlphaF(max(0.0, min(1.0, particle.alpha)))
+            self.apply_glow_effect(
+                painter,
+                particle.x * scale,
+                particle.y * scale,
+                particle.size * scale * 1.8,
+                color,
+                particle.alpha,
+            )
+            painter.save()
+            painter.setBrush(color)
+            painter.setPen(Qt.NoPen)
+            size = particle.size * scale
+            painter.drawEllipse(QRectF(particle.x * scale - size / 2, particle.y * scale - size / 2, size, size))
+            painter.restore()
+
+        for dust in character.visual_effects.star_dust:
+            if background:
+                continue
+            color = QColor(*self.palette["silver_white"])
+            color.setAlphaF(dust.alpha * 0.8)
+            painter.save()
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(color)
+            size = dust.size * scale
+            painter.drawEllipse(QRectF(dust.x * scale - size / 2, dust.y * scale - size / 2, size, size))
+            painter.restore()
     
     def draw_particles_background(self, painter: QPainter, character: Character, scale: float):
         """Draw background particle effects"""

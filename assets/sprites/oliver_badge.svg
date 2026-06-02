@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38">
+<defs><radialGradient id="badge" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#D9A15C"/><stop offset="1" stop-color="#A56A2F"/></radialGradient></defs>
+<circle cx="19" cy="19" r="15" fill="url(#badge)" stroke="#F0D68A" stroke-width="2"/>
+<path d="M11 22h10l4-6h2" fill="none" stroke="#1A2D4D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M20 12c5 2 7 8 4 13" fill="none" stroke="#1A2D4D" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

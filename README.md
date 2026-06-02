@@ -94,12 +94,11 @@ oliver-desktop-pet/
 
 ### Rendering Pipeline
 1. Clear canvas
-2. Draw background particles
-3. Draw body and main character elements
-4. Draw wings and secondary elements
-5. Draw head and facial features
-6. Draw accessories
-7. Draw foreground effects and UI
+2. Load and cache layered SVG sprites
+3. Draw idle glow, shadow and ambient particles
+4. Draw body, wings and head components in order
+5. Draw accessories and foreground sparkle effects
+6. Fall back to procedural painter paths when SVG assets are unavailable
 
 ## Configuration
 
@@ -110,6 +109,10 @@ Edit `src/config.py` to customize:
 - Particle system parameters
 - Window properties
 - Audio settings
+
+## SVG Assets
+
+High-quality idle-state assets live in `/assets/sprites` and are loaded by `Renderer.load_svg()` through `QSvgRenderer`. The idle renderer composes these layers dynamically, so accessories can be hidden or animated independently without redrawing the whole character.
 
 ## Controls
 
