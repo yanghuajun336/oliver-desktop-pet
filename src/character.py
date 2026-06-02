@@ -60,7 +60,7 @@ class Character:
             "shoes": True,
         }
         self.breathing_amplitude = 2.5
-        self.ambient_glow_intensity = 0.55
+        self.ambient_glow_intensity = 0.28
         self.visual_effects = ParticleSystem()
         self.recent_keywords = ["索引", "检索", "归档"]
         
@@ -198,25 +198,25 @@ class Character:
             self.facial_expression = "confused"
 
         pulse = 0.5 + 0.5 * math.sin(self.animation_time * math.pi * 0.6)
-        self.ambient_glow_intensity = 0.4 + pulse * 0.3
+        self.ambient_glow_intensity = 0.18 + pulse * 0.14
 
     def get_component_transform(self, component_name: str):
         """Get component transform for layered SVG rendering."""
         body_y = self.body_y_offset
         wing_offset = self.wing_spread_angle * 0.12
         transforms = {
-            "body": {"position": (0.0, 24.0 + body_y), "rotation": 0.0, "scale": 1.0, "opacity": 1.0},
-            "head": {"position": (0.0, -56.0 + body_y), "rotation": self.head_tilt, "scale": 1.0, "opacity": 1.0},
-            "eyes": {"position": (0.0, -56.0 + body_y), "rotation": self.head_tilt, "scale": 1.0, "opacity": 1.0},
-            "eyebrows": {"position": (0.0, -72.0 + body_y), "rotation": self.head_tilt, "scale": 1.0, "opacity": 1.0},
-            "beak": {"position": (0.0, -36.0 + body_y), "rotation": self.head_tilt - 2.0, "scale": 1.0, "opacity": 1.0},
-            "wing_left": {"position": (-44.0, 26.0 + body_y), "rotation": -24.0 - wing_offset + self.wing_flap_offset * 0.35, "scale": 1.0, "opacity": 0.92},
-            "wing_right": {"position": (44.0, 26.0 + body_y), "rotation": 24.0 + wing_offset + self.wing_flap_offset * 0.35, "scale": 1.0, "opacity": 0.92},
-            "hat": {"position": (2.0, -102.0 + body_y), "rotation": self.head_tilt - 5.0, "scale": 1.0, "opacity": 1.0},
-            "glasses": {"position": (18.0, -58.0 + body_y + self.monocle_offset_y), "rotation": self.head_tilt - 10.0, "scale": 1.0, "opacity": 1.0},
-            "scarf": {"position": (0.0, -2.0 + body_y), "rotation": 0.0, "scale": 1.0, "opacity": 1.0},
-            "badge": {"position": (-24.0, 42.0 + body_y), "rotation": -10.0, "scale": 1.0, "opacity": 1.0},
-            "shoes": {"position": (0.0, 108.0 + body_y), "rotation": 0.0, "scale": 1.0, "opacity": 1.0},
+            "body": {"position": (0.0, 28.0 + body_y), "rotation": 0.0, "scale": 0.84, "opacity": 1.0},
+            "head": {"position": (2.0, -26.0 + body_y), "rotation": self.head_tilt, "scale": 0.72, "opacity": 1.0},
+            "eyes": {"position": (4.0, -24.0 + body_y), "rotation": self.head_tilt, "scale": 0.66, "opacity": 1.0},
+            "eyebrows": {"position": (3.0, -40.0 + body_y), "rotation": self.head_tilt, "scale": 0.68, "opacity": 1.0},
+            "beak": {"position": (2.0, -6.0 + body_y), "rotation": self.head_tilt - 2.0, "scale": 0.58, "opacity": 1.0},
+            "wing_left": {"position": (-56.0, 26.0 + body_y), "rotation": -20.0 - wing_offset + self.wing_flap_offset * 0.35, "scale": 0.72, "opacity": 0.98},
+            "wing_right": {"position": (56.0, 26.0 + body_y), "rotation": 20.0 + wing_offset + self.wing_flap_offset * 0.35, "scale": 0.72, "opacity": 0.98},
+            "hat": {"position": (5.0, -72.0 + body_y), "rotation": self.head_tilt - 5.0, "scale": 0.62, "opacity": 1.0},
+            "glasses": {"position": (28.0, -22.0 + body_y + self.monocle_offset_y), "rotation": self.head_tilt - 10.0, "scale": 0.52, "opacity": 0.96},
+            "scarf": {"position": (0.0, 2.0 + body_y), "rotation": 0.0, "scale": 0.64, "opacity": 0.98},
+            "badge": {"position": (-34.0, 42.0 + body_y), "rotation": -10.0, "scale": 0.58, "opacity": 1.0},
+            "shoes": {"position": (0.0, 98.0 + body_y), "rotation": 0.0, "scale": 0.56, "opacity": 1.0},
         }
 
         transform = dict(transforms.get(component_name, {"position": (0.0, body_y), "rotation": 0.0, "scale": 1.0, "opacity": 1.0}))

@@ -28,6 +28,20 @@ class Renderer:
         self.widget = widget
         self.palette = COLOR_PALETTE
         self._svg_cache = {}
+        self._asset_alignment = {
+            "body": {"offset": QPointF(0.0, -6.0)},
+            "head": {"offset": QPointF(0.0, -4.0)},
+            "eyes": {"offset": QPointF(0.0, 0.0)},
+            "eyebrows": {"offset": QPointF(0.0, -1.0)},
+            "beak": {"offset": QPointF(0.0, 0.0)},
+            "wings": {"offset": QPointF(0.0, -2.0)},
+            "horns": {"offset": QPointF(0.0, -24.0)},
+            "hat": {"offset": QPointF(0.0, -3.0)},
+            "glasses": {"offset": QPointF(0.0, 0.0)},
+            "scarf": {"offset": QPointF(0.0, 0.0)},
+            "badge": {"offset": QPointF(0.0, 0.0)},
+            "shoes": {"offset": QPointF(0.0, 0.0)},
+        }
         self.asset_paths = {
             "body": SPRITES_DIR / "oliver_body.svg",
             "head": SPRITES_DIR / "oliver_head.svg",
@@ -136,6 +150,7 @@ class Renderer:
 
         width = pixmap.width() / pixmap.devicePixelRatioF()
         height = pixmap.height() / pixmap.devicePixelRatioF()
+        offset = self._asset_alignment.get(asset_name, {}).get("offset", QPointF(0.0, 0.0))
 
         painter.save()
         painter.setOpacity(max(0.0, min(1.0, opacity)))
@@ -143,7 +158,7 @@ class Renderer:
         painter.translate(position)
         painter.rotate(rotation)
         painter.scale(scale, scale)
-        painter.drawPixmap(QPointF(-width / 2.0, -height / 2.0), pixmap)
+        painter.drawPixmap(QPointF(-width / 2.0 + offset.x(), -height / 2.0 + offset.y()), pixmap)
         painter.restore()
 
     def draw_oliver_idle(self, painter: QPainter, character: Character, scale: float):
@@ -158,17 +173,17 @@ class Renderer:
         self.apply_shadow_effect(
             painter,
             0.0,
-            (118.0 + character.body_y_offset) * scale,
-            72.0 * scale,
-            QColor(18, 25, 44, 118),
-            28.0 * scale,
+            (112.0 + character.body_y_offset) * scale,
+            46.0 * scale,
+            QColor(18, 25, 44, 84),
+            20.0 * scale,
         )
         self.apply_glow_effect(
             painter,
             0.0,
-            (8.0 + character.body_y_offset) * scale,
-            118.0 * scale,
-            QColor(212, 160, 23),
+            (18.0 + character.body_y_offset) * scale,
+            62.0 * scale,
+            QColor(127, 150, 214),
             character.ambient_glow_intensity,
         )
 
@@ -181,9 +196,9 @@ class Renderer:
                 wing_name,
                 QPointF(transform["position"][0] * scale, transform["position"][1] * scale),
                 transform["rotation"],
-                transform["scale"] * scale / 2.0,
+                transform["scale"],
                 transform["opacity"],
-                blend_mode=QPainter.CompositionMode_Multiply,
+                blend_mode=QPainter.CompositionMode_SourceOver,
             )
 
         for component_name in ("body", "scarf", "badge", "shoes"):
@@ -193,7 +208,7 @@ class Renderer:
                 component_name,
                 QPointF(transform["position"][0] * scale, transform["position"][1] * scale),
                 transform["rotation"],
-                transform["scale"] * scale / 2.0,
+                transform["scale"],
                 transform["opacity"],
             )
 
@@ -207,7 +222,7 @@ class Renderer:
                 component_name,
                 QPointF(transform["position"][0] * scale, transform["position"][1] * scale),
                 transform["rotation"],
-                transform["scale"] * scale / 2.0,
+                transform["scale"],
                 transform["opacity"],
                 blend_mode=blend_mode,
             )
@@ -231,9 +246,9 @@ class Renderer:
                 component_name,
                 QPointF(transform["position"][0] * scale, transform["position"][1] * scale),
                 transform["rotation"],
-                transform["scale"] * scale / 2.0,
+                transform["scale"],
                 transform["opacity"],
-                blend_mode=QPainter.CompositionMode_Overlay,
+                blend_mode=QPainter.CompositionMode_SourceOver,
             )
 
         self._draw_idle_effects(painter, character, scale, background=False)
@@ -258,9 +273,9 @@ class Renderer:
         painter.save()
         gradient = QRadialGradient(QPointF(x, y), size)
         inner = QColor(color)
-        inner.setAlpha(int(140 * max(0.0, min(1.0, intensity))))
+        inner.setAlpha(int(70 * max(0.0, min(1.0, intensity))))
         mid = QColor(color)
-        mid.setAlpha(int(60 * max(0.0, min(1.0, intensity))))
+        mid.setAlpha(int(28 * max(0.0, min(1.0, intensity))))
         outer = QColor(color)
         outer.setAlpha(0)
         gradient.setColorAt(0.0, inner)
@@ -290,9 +305,9 @@ class Renderer:
                 f"horn_{index}",
                 position,
                 local_angle - 90.0,
-                scale / 2.0,
-                0.96,
-                blend_mode=QPainter.CompositionMode_Screen,
+                0.55,
+                0.92,
+                blend_mode=QPainter.CompositionMode_SourceOver,
             )
 
     def _draw_idle_effects(self, painter: QPainter, character: Character, scale: float, background: bool):
