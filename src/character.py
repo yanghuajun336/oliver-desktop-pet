@@ -4,6 +4,7 @@ from src.config import CHARACTER, ANIMATION
 from src.utils.geometry import Point
 from src.utils.time_utils import is_daytime
 from src.particles import ParticleManager
+from src.visual_effects import ParticleSystem
 import math
 
 
@@ -37,7 +38,7 @@ class Character:
         self.last_activity_time = 0.0
         self.breathing_offset = 0.0
         self.body_y_offset = 0.0
-        self.facial_expression = "neutral"
+        self.facial_expression = "idle"
         self.eye_state = "open"
         self.eye_openness = 1.0
         self.wing_spread_angle = 0.0
@@ -51,6 +52,16 @@ class Character:
         self._blink_cooldown = ANIMATION['blink_interval']
         self._is_blinking = False
         self.particle_manager = ParticleManager()
+        self.accessory_visibility = {
+            "hat": True,
+            "glasses": True,
+            "scarf": True,
+            "badge": True,
+            "shoes": True,
+        }
+        self.breathing_amplitude = 2.5
+        self.ambient_glow_intensity = 0.55
+        self.visual_effects = ParticleSystem()
         self.recent_keywords = ["索引", "检索", "归档"]
         
     def update(self, delta_time: float):
@@ -71,6 +82,7 @@ class Character:
         
         # State-specific updates
         self._update_state_animation(delta_time)
+        self.update_facial_features(delta_time)
         
         # Update particle system
         activity_multiplier = 1.0
@@ -79,6 +91,7 @@ class Character:
         elif self.state == CharacterState.SURPRISED:
             activity_multiplier = 1.5
         self.particle_manager.update(delta_time, activity_multiplier)
+        self.visual_effects.update(delta_time, self)
     
     def update_blink(self, delta_time: float):
         """Update eye blinking animation"""
@@ -112,7 +125,7 @@ class Character:
         """Update breathing animation"""
         self.breathing_progress = (self.animation_time % ANIMATION['breathing_duration']) / ANIMATION['breathing_duration']
         # Sine wave for smooth breathing
-        self.breathing_offset = math.sin(self.breathing_progress * 2 * math.pi) * 2.5
+        self.breathing_offset = math.sin(self.breathing_progress * 2 * math.pi) * self.breathing_amplitude
         self.body_y_offset = self.breathing_offset
     
     def update_horn_shake(self, delta_time: float):
@@ -122,7 +135,7 @@ class Character:
     
     def _update_state_animation(self, delta_time: float):
         """Update animations based on current state"""
-        self.forward_tilt = 0.0
+        self.forward_tilt = 2.0
         self.monocle_offset_y = 0.0
         self.star_pupil_mode = False
         self.wing_flap_offset = 0.0
@@ -132,7 +145,8 @@ class Character:
         if self.state == CharacterState.IDLE:
             self.head_tilt = 15.0  # Default tilt to right
             self.wing_spread_angle = 0.0
-            self.facial_expression = "neutral"
+            self.facial_expression = "idle"
+            self.forward_tilt = 3.0
         elif self.state == CharacterState.THINKING:
             self.head_tilt = 15.0
             self.wing_spread_angle = min(45.0, self.state_time * 120.0)
@@ -170,6 +184,45 @@ class Character:
             self.facial_expression = "focused"
             if int(self.animation_time * 10) % 2 == 0:
                 self.particle_manager.spawn_flight_trail(self.recent_keywords)
+
+    def update_facial_features(self, delta_time: float):
+        """Update facial nuance and glow for current state."""
+        del delta_time
+        if self.state == CharacterState.IDLE and self.eye_openness > 0.2:
+            self.facial_expression = "idle"
+        elif self.state == CharacterState.SURPRISED:
+            self.facial_expression = "surprised"
+        elif self.state == CharacterState.THINKING:
+            self.facial_expression = "thinking"
+        elif self.state == CharacterState.CONFUSED:
+            self.facial_expression = "confused"
+
+        pulse = 0.5 + 0.5 * math.sin(self.animation_time * math.pi * 0.6)
+        self.ambient_glow_intensity = 0.4 + pulse * 0.3
+
+    def get_component_transform(self, component_name: str):
+        """Get component transform for layered SVG rendering."""
+        body_y = self.body_y_offset
+        wing_offset = self.wing_spread_angle * 0.12
+        transforms = {
+            "body": {"position": (0.0, 24.0 + body_y), "rotation": 0.0, "scale": 1.0, "opacity": 1.0},
+            "head": {"position": (0.0, -56.0 + body_y), "rotation": self.head_tilt, "scale": 1.0, "opacity": 1.0},
+            "eyes": {"position": (0.0, -56.0 + body_y), "rotation": self.head_tilt, "scale": 1.0, "opacity": 1.0},
+            "eyebrows": {"position": (0.0, -72.0 + body_y), "rotation": self.head_tilt, "scale": 1.0, "opacity": 1.0},
+            "beak": {"position": (0.0, -36.0 + body_y), "rotation": self.head_tilt - 2.0, "scale": 1.0, "opacity": 1.0},
+            "wing_left": {"position": (-44.0, 26.0 + body_y), "rotation": -24.0 - wing_offset + self.wing_flap_offset * 0.35, "scale": 1.0, "opacity": 0.92},
+            "wing_right": {"position": (44.0, 26.0 + body_y), "rotation": 24.0 + wing_offset + self.wing_flap_offset * 0.35, "scale": 1.0, "opacity": 0.92},
+            "hat": {"position": (2.0, -102.0 + body_y), "rotation": self.head_tilt - 5.0, "scale": 1.0, "opacity": 1.0},
+            "glasses": {"position": (18.0, -58.0 + body_y + self.monocle_offset_y), "rotation": self.head_tilt - 10.0, "scale": 1.0, "opacity": 1.0},
+            "scarf": {"position": (0.0, -2.0 + body_y), "rotation": 0.0, "scale": 1.0, "opacity": 1.0},
+            "badge": {"position": (-24.0, 42.0 + body_y), "rotation": -10.0, "scale": 1.0, "opacity": 1.0},
+            "shoes": {"position": (0.0, 108.0 + body_y), "rotation": 0.0, "scale": 1.0, "opacity": 1.0},
+        }
+
+        transform = dict(transforms.get(component_name, {"position": (0.0, body_y), "rotation": 0.0, "scale": 1.0, "opacity": 1.0}))
+        if component_name in self.accessory_visibility and not self.accessory_visibility[component_name]:
+            transform["opacity"] = 0.0
+        return transform
     
     def set_state(self, new_state: CharacterState):
         """Change character state"""

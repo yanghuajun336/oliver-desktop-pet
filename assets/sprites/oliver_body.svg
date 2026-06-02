@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="140" height="170" viewBox="0 0 140 170">
+<defs><linearGradient id="bodyFill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#41558E"/><stop offset="0.58" stop-color="#2B3A67"/><stop offset="1" stop-color="#1E2949"/></linearGradient><radialGradient id="bellyFill" cx="50%" cy="35%" r="70%"><stop offset="0" stop-color="#FFFDF5"/><stop offset="1" stop-color="#F0E8D5"/></radialGradient><radialGradient id="bodyGlow" cx="50%" cy="15%" r="70%"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.28"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs>
+<ellipse cx="70" cy="92" rx="46" ry="58" fill="url(#bodyFill)" stroke="#F0D68A" stroke-width="3"/>
+<path d="M40 62c10-16 50-19 66-3 9 9 12 30 8 48-6 28-26 44-44 44-23 0-40-22-40-51 0-15 4-28 10-38z" fill="url(#bodyGlow)"/>
+<path d="M46 84c7-17 42-22 53-10 7 8 9 19 8 32-2 24-17 40-36 40-20 0-34-18-34-39 0-9 3-17 9-23z" fill="url(#bellyFill)" opacity="0.96"/>
+<path d="M33 108c14 20 28 30 37 32 13 3 28-4 40-19" fill="none" stroke="#E0D0A6" stroke-opacity="0.45" stroke-width="4" stroke-linecap="round"/>
+</svg>

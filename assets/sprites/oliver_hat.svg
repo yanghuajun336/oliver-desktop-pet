@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="94" height="76" viewBox="0 0 94 76">
+<defs><linearGradient id="hat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6E4A2C"/><stop offset="1" stop-color="#4A2D19"/></linearGradient><radialGradient id="ruby" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FF6A7A"/><stop offset="1" stop-color="#A8182A"/></radialGradient></defs>
+<path d="M12 40 47 16 82 40 47 54z" fill="url(#hat)"/>
+<path d="M30 42c8 9 27 9 35 0v12c-8 6-27 6-35 0z" fill="#5A3820"/>
+<ellipse cx="47" cy="53" rx="29" ry="7" fill="#3D2416"/>
+<path d="M47 28v31" stroke="#F0D68A" stroke-width="2" stroke-linecap="round"/>
+<circle cx="47" cy="28" r="3" fill="#F0D68A"/>
+<path d="M47 59c6 0 6 8 0 8-6 0-6-8 0-8z" fill="url(#ruby)"/>
+</svg>
